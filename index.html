@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html>
+<head>
+   <!-- Use this International Space Station API to make a visualization of where the ISS is now! Get creative!
+
+   http://open-notify.org/Open-Notify-API/ISS-Location-Now/
+
+   http://api.open-notify.org/iss-now.json
+
+   {
+     "message": "success",
+     "timestamp": UNIX_TIME_STAMP,
+     "iss_position": {
+       "latitude": CURRENT_LATITUDE,
+       "longitude": CURRENT_LONGITUDE
+     }
+   }
+   The data payload has a timestamp and an iss_position object with the latitude and longitude.
+-->
+   <meta charset="utf-8"/>
+   <link rel="stylesheet" type="text/css" href="mypath.css" />
+   <script type="text/javascript" src="scripts/zepto.min.js"></script>
+   <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+   <script src="https://cdn.jsdelivr.net/bluebird/3.5.0/bluebird.min.js"></script>
+   <script src="https://cdnjs.cloudflare.com/ajax/libs/fetch/2.0.3/fetch.js"></script>
+   <script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?key=AIzaSyC6Rzaae70Nj8Py5iIRKUTNehX8sEhDWus&sensor=true"></script>
+   <script src="scripts/gmaps.js"></script>
+   <script type="text/javascript">
+
+var map={};
+var currentLocation={};
+var lastISSLocation={};
+
+function isEmpty(obj) {
+   // https://stackoverflow.com/questions/679915/how-do-i-test-for-an-empty-javascript-object
+    for(var prop in obj) {
+        if(obj.hasOwnProperty(prop))
+            return false;
+    }
+    return true;
+}
+
+   function getISSData() {
+     fetch('http://api.open-notify.org/iss-now.json') // haces la llamada
+       .then(function(r) { // empaquetas el resultado una vez está hecho y lo devuelves convertido a JSON
+         return r.json();
+       })
+       .then(function(j) { // j contiene el objeto con la respuesta del api
+         response = j;
+         console.log (j.iss_position); // de este modo podemos acceder a los datos contenidos en el objeto
+         // aunque normalmente lo que haremos es manipular objetos DOM (p's li's etc) y meterles el contenido como innerHTML
+         var d=new Date();
+         var dString=d.getDate() +'/'+d.getMonth()+'/'+d.getFullYear()+' ' + d.getHours()+':'+d.getMinutes()+':'+d.getSeconds();
+         console.log(dString);
+
+         if (!isEmpty(lastISSLocation)){
+            map.removeMarkers();
+            map.addMarker({
+               lat:currentLocation.latitude,
+               lng:currentLocation.longitude
+            });
+         }
+         map.addMarker({
+            lat: j.iss_position.latitude,
+            lng: j.iss_position.longitude,
+            //lat: 0,
+            //lng: 0,
+            icon: 'iss30x30.png',
+            infoWindow: {
+               content: '<p>Fecha y hora: ' + dString + ' </p><p>Longitud: ' + j.iss_position.longitude + ', latitud: ' + j.iss_position.latitude + '</p>'
+            }
+         });
+         lastISSLocation=j.iss_position;
+      })
+   }
+
+   $(function() {
+      // alert("hello");
+
+      function geolocalizar(){
+       GMaps.geolocate({
+          success: function(position){
+            lat = position.coords.latitude;  // guarda coords en lat y lng
+            lng = position.coords.longitude;
+            currentLocation={latitude: lat, longitude: lng};
+            map = new GMaps({  // muestra mapa centrado en coords [lat, lng]
+              el: '#map',
+              zoom: 1,
+              lat: lat,
+              lng: lng
+            });
+            map.addMarker({ lat: lat, lng: lng});  // marcador en [lat, lng]
+          },
+          error: function(error) { alert('Error: '+error.message); },
+          not_supported: function(){ alert("No soporta geolocalización"); },
+       });
+      };
+
+      $("#buscar").click(function(){
+         getISSData();
+      });
+
+      $("#buscar2").click(function(){
+         map.addMarker({
+            lat: 0,
+            lng: 0,
+            infoWindow: {
+               content: '<p>cero cero</p>'
+            }
+         });
+      });
+
+      geolocalizar();
+
+   });
+   </script>
+</head>
+<body>
+   <div id="map"></div>
+   <div id="botonera">
+      <button id="buscar">ISS</button>
+      <button id="buscar2">0,0</button>
+   </div>
+</body>
+</html>
