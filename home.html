@@ -112,7 +112,11 @@ function isEmpty(obj) {
 
       geolocalizar();
 
-   });
+      setInterval(function(){
+         getISSData();
+      },30000);
+
+   }); // fin onload
    </script>
 </head>
 <body>
